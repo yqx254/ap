@@ -11,4 +11,5 @@
     <string name="hello_second_fragment">Hello second fragment. Arg: %1$s</string>
     <string name="查询">请输入号码</string>
     <string name="button">button_send</string>
+    <string name="title_activity_detail_info">详情</string>
 </resources>
