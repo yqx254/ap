@@ -1,6 +1,8 @@
 package com.example.myapplication;
 
 import android.content.Intent;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -14,20 +16,26 @@ import android.widget.ArrayAdapter;
 import android.text.TextUtils;
 import android.widget.Toast;
 
+import com.example.myapplication.dao.DatabaseHelper;
+
+import java.util.ArrayList;
+
 public class MainActivity extends AppCompatActivity implements OnQueryTextListener{
     public static final String QUERY = "com.example.myapplication.MESSAGE";
     private SearchView sView;
     private ListView lView;
     public static final String EXTRA_MESSAGE = "com.example.myfirstapp.MESSAGE";
+    private SQLiteDatabase db;
+    private DatabaseHelper helper;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        String [] mStrings = {"大中锋","中锋","中风"};
+        initDatabaseHelper();
         sView = (SearchView)findViewById(R.id.search);
         lView = (ListView)findViewById(R.id.linearLayout1);
 
-        lView.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1,mStrings));
+        lView.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1,getSearchHist()));
         lView.setTextFilterEnabled(true);
 
 //        sView.setIconified(false);
@@ -79,8 +87,32 @@ public class MainActivity extends AppCompatActivity implements OnQueryTextListen
     }
     /*提交查询*/
     private void sendQuery(String query){
+        this.addSearchHist(query);
         Intent intent = new Intent(this, QueryResult.class);
         intent.putExtra(QUERY, query);
         startActivity(intent);
+    }
+    /*初始化数据库helper*/
+    private void initDatabaseHelper(){
+        helper = new DatabaseHelper(this,"myDB.db",null, 1);
+        db = helper.getWritableDatabase();
+    }
+    /*初始化数据--只打算用一波*/
+    private void initDatabase(){
+
+    }
+    /*查询搜索历史*/
+    private ArrayList<String> getSearchHist(){
+        ArrayList<String> result = new ArrayList<>();
+        Cursor cursor = db.rawQuery("SELECT keyword FROM keyword ORDER BY created_at DESC LIMIT 5",null);
+        while(cursor.moveToNext()){
+            String keyword = cursor.getString(cursor.getColumnIndex("keyword"));
+            result.add(keyword);
+        }
+        return result;
+    }
+    /*添加搜索历史*/
+    private void addSearchHist(String s){
+        db.execSQL("INSERT INTO keyword(keyword, created_at) VALUES(?, ?)",new Object[]{s, System.currentTimeMillis() / 1000});
     }
 }
