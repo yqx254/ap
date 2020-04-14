@@ -9,6 +9,8 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.AdapterView;
 import android.widget.SearchView;
 import android.widget.SearchView.OnQueryTextListener;
 import android.widget.ListView;
@@ -20,13 +22,15 @@ import com.example.myapplication.dao.DatabaseHelper;
 
 import java.util.ArrayList;
 
-public class MainActivity extends AppCompatActivity implements OnQueryTextListener{
+public class MainActivity extends AppCompatActivity implements OnQueryTextListener {
     public static final String QUERY = "com.example.myapplication.MESSAGE";
     private SearchView sView;
     private ListView lView;
     public static final String EXTRA_MESSAGE = "com.example.myfirstapp.MESSAGE";
     private SQLiteDatabase db;
     private DatabaseHelper helper;
+    ArrayList<String> histData;
+    private boolean isRecord = true;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -34,10 +38,17 @@ public class MainActivity extends AppCompatActivity implements OnQueryTextListen
         initDatabaseHelper();
         sView = (SearchView)findViewById(R.id.search);
         lView = (ListView)findViewById(R.id.linearLayout1);
-
-        lView.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1,getSearchHist()));
+        histData = getSearchHist();
+        lView.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1,histData));
         lView.setTextFilterEnabled(true);
-
+        lView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                String query = histData.get(position);
+                isRecord = false;
+                sendQuery(query);
+            }
+        });
 //        sView.setIconified(false);
         sView.setOnQueryTextListener(this);
         sView.setSubmitButtonEnabled(true);
@@ -58,8 +69,8 @@ public class MainActivity extends AppCompatActivity implements OnQueryTextListen
 
     @Override
     public boolean onQueryTextSubmit(String query) {
-        //这里仅仅是模拟，实际中应该在该方法中进行查询，然后将结果得到
         Toast.makeText(MainActivity.this, "查询中："+query, Toast.LENGTH_SHORT).show();
+        isRecord = true;
         this.sendQuery(query);
         return false;
     }
@@ -77,7 +88,7 @@ public class MainActivity extends AppCompatActivity implements OnQueryTextListen
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
-
+        System.out.println(id);
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
             return true;
@@ -87,7 +98,9 @@ public class MainActivity extends AppCompatActivity implements OnQueryTextListen
     }
     /*提交查询*/
     private void sendQuery(String query){
-        this.addSearchHist(query);
+        if(isRecord) {
+            this.addSearchHist(query);
+        }
         Intent intent = new Intent(this, QueryResult.class);
         intent.putExtra(QUERY, query);
         startActivity(intent);
@@ -96,10 +109,6 @@ public class MainActivity extends AppCompatActivity implements OnQueryTextListen
     private void initDatabaseHelper(){
         helper = new DatabaseHelper(this,"myDB.db",null, 1);
         db = helper.getWritableDatabase();
-    }
-    /*初始化数据--只打算用一波*/
-    private void initDatabase(){
-
     }
     /*查询搜索历史*/
     private ArrayList<String> getSearchHist(){
@@ -115,4 +124,5 @@ public class MainActivity extends AppCompatActivity implements OnQueryTextListen
     private void addSearchHist(String s){
         db.execSQL("INSERT INTO keyword(keyword, created_at) VALUES(?, ?)",new Object[]{s, System.currentTimeMillis() / 1000});
     }
+
 }
