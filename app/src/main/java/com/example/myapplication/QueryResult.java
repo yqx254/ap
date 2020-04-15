@@ -8,6 +8,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.SimpleAdapter;
 import android.widget.Toast;
 
 import androidx.appcompat.app.ActionBar;
@@ -19,6 +20,7 @@ import com.example.myapplication.dao.DatabaseHelper;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class QueryResult extends AppCompatActivity{
     private ListView listView;
@@ -26,7 +28,7 @@ public class QueryResult extends AppCompatActivity{
     public static final String query = "com.example.myapplication.MESSAGE";
     private DatabaseHelper helper;
     private SQLiteDatabase db;
-    private ArrayList<String> queryResult;
+    private ArrayList<HashMap<String, String>> queryResult;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -39,20 +41,22 @@ public class QueryResult extends AppCompatActivity{
         System.out.println("query string " + s);
         queryResult = search(s);
         listView = findViewById(R.id.listView2);
-        listView.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1,queryResult));
+        SimpleAdapter adapter = new SimpleAdapter(this,queryResult,R.layout.list_item,new String[]{"id", "name"},new int[]{R.id.itemTitle,R.id.itemContent});
+        listView.setAdapter(adapter);
         listView.setTextFilterEnabled(true);
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                sendDetailId(position);
+                HashMap<String, String> map = (HashMap<String, String>)listView.getItemAtPosition(position);
+                String currentId = map.get("id");
+                sendDetailId(currentId);
                 Toast.makeText(QueryResult.this,"num" + id,Toast.LENGTH_LONG).show();
             }
         });
     }
-    private void sendDetailId(int id){
+    private void sendDetailId(String id){
         Intent intent1 = new Intent(this, DetailInfoActivity.class);
         intent1.putExtra(query,id);
-        System.out.println(id);
         startActivity(intent1);
     }
 
@@ -61,12 +65,15 @@ public class QueryResult extends AppCompatActivity{
         db = helper.getWritableDatabase();
     }
 
-    private ArrayList<String> search(String query){
-        ArrayList<String> result = new ArrayList<>();
+    private ArrayList<HashMap<String, String>> search(String query){
+        ArrayList<HashMap<String, String>> result = new ArrayList<>();
         Cursor cursor = db.query("info", new String[]{"_id, name"}," name LIKE ?",
                                     new String[]{"%" + query + "%"}, null,null,null,"10");
         while(cursor.moveToNext()){
-            result.add(cursor.getString(cursor.getColumnIndex("name")));
+            HashMap<String, String> map = new HashMap<>();
+            map.put("id", cursor.getString(cursor.getColumnIndex("_id")));
+            map.put("name", cursor.getString(cursor.getColumnIndex("name")));
+            result.add(map);
         }
         return result;
     }
